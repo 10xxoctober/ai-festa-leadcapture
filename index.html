@@ -62,8 +62,8 @@
   .retake{margin-top:10px;font-size:14px;color:var(--brand);background:none;border:0;font-weight:600;padding:6px 0;cursor:pointer}
 
   /* 입력 */
-  label.f{display:block;font-size:13px;font-weight:600;color:var(--sub);margin:18px 0 8px;letter-spacing:-.005em}
-  label.f:first-of-type{margin-top:0}
+  label.f{display:block;font-size:13px;font-weight:600;color:var(--sub);margin:22px 0 8px;letter-spacing:-.005em}
+  .card h2+label.f{margin-top:0}
   .row{display:flex;gap:8px}
   input[type=text],input[type=tel],input[type=email],textarea{
     width:100%;font:inherit;font-size:16px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);
@@ -75,7 +75,7 @@
   .hint.err{color:var(--rec)}
 
   /* 관심 제품 / 예약 옵션 공용 칩 */
-  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:10px 8px}
   .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 16px;font-size:14px;
     font-weight:600;cursor:pointer;user-select:none;color:var(--ink);transition:all .12s}
   .chip:hover:not(:disabled){border-color:var(--muted);background:var(--well)}
@@ -181,7 +181,7 @@
   </section>
 
   <section class="card">
-    <h2><span class="step">3</span>관심 제품</h2>
+    <h2><span class="step">3</span>관심 제품 <span class="optional">※ 복수응답 가능</span></h2>
     <div class="chips" id="chips"></div>
 
     <label class="f" for="detail">상세 관심 내용</label>
@@ -226,7 +226,7 @@
   <section class="card">
     <label class="consent">
       <input type="checkbox" id="consent">
-      <span><span class="req">필수</span> 개인정보 수집·이용에 동의합니다. GPUBASE 관련 안내 및 상담 목적으로만 사용됩니다.</span>
+      <span><span class="req">필수</span> 개인정보 수집·이용에 동의합니다. (주)아크릴의 제품 관련 안내 및 상담 목적으로만 사용됩니다.</span>
     </label>
     <details>
       <summary>자세히 보기</summary>
@@ -259,10 +259,11 @@ const CONFIG = {
   RESET_MS: 6000,               // 완료 화면 후 자동 초기화 시간
   // 관심 제품 목록 — 실제 제품/서비스명으로 바꿔주세요.
   PRODUCTS: [
-    'GPUBASE 도입문의',
-    'GPUBASE 견적',
-    'PoC/데모요청',
+    'GPUBASE',
     'AgentBase',
+    '회사소개서',
+    '제품소개서',
+    'PoC/데모요청',
     '파트너/리셀',
     '기타',
   ],
