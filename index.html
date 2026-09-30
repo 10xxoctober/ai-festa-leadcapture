@@ -4,103 +4,139 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GPUBASE 방문 등록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f4f6fb; --card:#fff; --ink:#111827; --sub:#6b7280; --line:#e5e7eb;
-    --brand:#3b4bff; --brand-ink:#fff; --rec:#e11d48; --ok:#059669;
+    --bg:#f7f7fa; --card:#fff; --ink:#131316; --sub:#6b7078; --muted:#9ca0a8;
+    --line:#e6e7ec; --line-strong:#d7d9e0; --field:#f3f4f7;
+    --brand:#3182f6; --brand-dark:#1b64da; --brand-tint:#eaf2fe; --brand-ink:#fff;
+    --rec:#f04452; --rec-tint:#fdebec; --ok:#12b76a;
+    --shadow-sm:0 1px 2px rgba(19,19,22,.04);
+    --shadow-md:0 12px 28px -16px rgba(19,19,22,.20);
+    --radius-lg:20px; --radius-md:14px;
   }
   *{box-sizing:border-box}
   html,body{margin:0}
-  body{font-family:-apple-system,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;
-    background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
-  .wrap{max-width:720px;margin:0 auto;padding:16px 16px 120px}
-  header{padding:12px 4px 8px}
-  header .ev{font-size:13px;color:var(--brand);font-weight:700;letter-spacing:.04em}
-  header h1{margin:4px 0 4px;font-size:26px;line-height:1.25}
-  header p{margin:0;color:var(--sub);font-size:15px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
-  .card h2{margin:0 0 12px;font-size:16px}
-  .req{color:var(--rec);font-weight:700}
+  body{font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%;
+    -webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  .topbar{position:fixed;top:0;left:0;right:0;height:3px;background:var(--brand);z-index:30}
+  .wrap{max-width:640px;margin:0 auto;padding:28px 20px 140px}
+  header{padding:4px 2px 28px}
+  header .ev{display:inline-flex;align-items:center;background:var(--brand-tint);color:var(--brand-dark);
+    font-size:12px;font-weight:700;letter-spacing:.04em;padding:5px 12px;border-radius:999px;margin-bottom:14px}
+  header h1{margin:0 0 8px;font-size:30px;line-height:1.25;font-weight:800;letter-spacing:-.02em}
+  header p{margin:0;color:var(--sub);font-size:15px;line-height:1.6}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:24px;margin-top:14px;box-shadow:var(--shadow-sm)}
+  .card h2{margin:0 0 16px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+  .step{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;
+    background:var(--brand-tint);color:var(--brand-dark);font-size:13px;font-weight:800;flex:0 0 24px}
+  .optional{font-weight:500;color:var(--muted);font-size:13px}
+  .req{display:inline-flex;align-items:center;background:var(--rec-tint);color:var(--rec);font-weight:700;
+    font-size:11px;letter-spacing:.02em;padding:3px 7px;border-radius:6px;margin-right:4px}
 
   /* 명함 촬영 — 아이패드 후면 카메라 / 노트북 웹캠 공용(getUserMedia), 미지원 시 파일 선택으로 대체 */
-  .shot{width:100%;min-height:190px;border:2px dashed #b9c0ff;border-radius:14px;background:#f5f6ff;
-    overflow:hidden;position:relative}
+  .shot{width:100%;min-height:200px;border:1.5px dashed #c7d4f9;border-radius:var(--radius-md);background:var(--brand-tint);
+    overflow:hidden;position:relative;transition:border-color .15s}
   .shot.has{border-style:solid;border-color:var(--line);background:#000}
   .shotBtn{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;
-    flex-direction:column;gap:8px;width:100%;min-height:190px;color:var(--brand);font-size:18px;
-    font-weight:700;cursor:pointer}
-  .shotBtn svg{width:44px;height:44px}
+    flex-direction:column;gap:10px;width:100%;min-height:200px;color:var(--brand-dark);font-size:16px;
+    font-weight:700;cursor:pointer;transition:opacity .15s}
+  .shotBtn:hover{opacity:.82}
+  .shotBtn svg{width:40px;height:40px}
   .shotBtn small{font-weight:500;color:var(--sub);font-size:13px}
   .shot img,.shot video{width:100%;height:auto;display:block;background:#000}
-  .camctl{position:absolute;left:0;right:0;bottom:12px;display:flex;gap:10px;justify-content:center}
-  .camBtn{padding:10px 20px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer}
-  .camBtn.primary{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
-  .retake{margin-top:8px;font-size:14px;color:var(--sub);background:none;border:0;text-decoration:underline;padding:6px 0;cursor:pointer}
+  .camctl{position:absolute;left:0;right:0;bottom:14px;display:flex;gap:10px;justify-content:center}
+  .camBtn{padding:11px 22px;border-radius:999px;border:0;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(6px);font-size:14px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-sm);
+    transition:transform .12s}
+  .camBtn:active{transform:scale(.96)}
+  .camBtn.primary{background:var(--brand);color:#fff;font-weight:700}
+  .retake{margin-top:10px;font-size:14px;color:var(--brand-dark);background:none;border:0;font-weight:600;padding:6px 0;cursor:pointer}
 
   /* 입력 */
-  label.f{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
+  label.f{display:block;font-size:13px;font-weight:700;color:var(--sub);margin:18px 0 8px;letter-spacing:-.005em}
   label.f:first-of-type{margin-top:0}
   .row{display:flex;gap:8px}
   input[type=text],input[type=tel],input[type=email],textarea{
-    width:100%;font:inherit;font-size:17px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;
-    background:#fff;color:var(--ink);outline:none}
-  input:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(59,75,255,.15)}
-  textarea{min-height:130px;resize:vertical;line-height:1.5}
-  .hint{min-height:18px;margin-top:4px;font-size:13px;color:var(--sub)}
+    width:100%;font:inherit;font-size:16px;padding:14px 16px;border:1.5px solid transparent;border-radius:var(--radius-md);
+    background:var(--field);color:var(--ink);outline:none;transition:border-color .15s,background .15s}
+  input::placeholder,textarea::placeholder{color:var(--muted)}
+  input:focus,textarea:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 4px var(--brand-tint)}
+  textarea{min-height:130px;resize:vertical;line-height:1.6}
+  .hint{min-height:18px;margin-top:6px;font-size:13px;color:var(--sub)}
   .hint.err{color:var(--rec)}
 
   /* 관심 제품 / 예약 옵션 공용 칩 */
   .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:11px 16px;font-size:15px;
-    cursor:pointer;user-select:none;color:var(--ink)}
-  .chip.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:10px 16px;font-size:14px;
+    font-weight:600;cursor:pointer;user-select:none;color:var(--ink);transition:all .12s}
+  .chip:hover:not(:disabled){border-color:var(--line-strong);background:var(--field)}
+  .chip.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);
+    box-shadow:0 6px 16px -6px rgba(49,130,246,.55)}
   .chip.taken{opacity:.4;text-decoration:line-through;cursor:not-allowed}
   .chip:disabled{opacity:.4;cursor:not-allowed}
 
   /* 미팅 예약 — 캘린더 */
-  .cal{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fafbff}
-  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-  .cal-title{font-weight:700;font-size:15px}
-  .calNav{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;
-    font-size:18px;line-height:1;cursor:pointer;color:var(--ink)}
-  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:12px;
-    color:var(--sub);margin-bottom:4px}
+  .cal{border:1px solid var(--line);border-radius:var(--radius-md);padding:16px;background:var(--field)}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .cal-title{font-weight:800;font-size:15px;letter-spacing:-.01em}
+  .calNav{width:32px;height:32px;border-radius:999px;border:0;background:#fff;
+    font-size:16px;line-height:1;cursor:pointer;color:var(--ink);box-shadow:var(--shadow-sm);transition:transform .12s}
+  .calNav:active{transform:scale(.9)}
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:12px;font-weight:600;
+    color:var(--muted);margin-bottom:6px}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
   .cal-day{all:unset;box-sizing:border-box;aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-    border-radius:10px;background:#fff;font-size:14px;cursor:pointer;color:var(--ink);text-align:center}
+    border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);text-align:center;transition:all .12s}
+  .cal-day:hover:not(:disabled):not(.on){background:#fff}
   .cal-day.empty{visibility:hidden}
-  .cal-day.past{color:#c7cbd6;cursor:not-allowed}
-  .cal-day.today{box-shadow:inset 0 0 0 2px var(--brand)}
-  .cal-day.on{background:var(--brand);color:#fff;font-weight:700;box-shadow:none}
-  #bookingCard .f{margin-top:16px}
+  .cal-day.past{color:#c7cbd3;cursor:not-allowed}
+  .cal-day.today{box-shadow:inset 0 0 0 1.5px var(--brand)}
+  .cal-day.on{background:var(--brand);color:#fff;font-weight:800;box-shadow:0 6px 16px -6px rgba(49,130,246,.6)}
+  #bookingCard .f{margin-top:20px}
 
   /* 동의 / 제출 */
-  .consent{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}
-  .consent input{width:22px;height:22px;margin-top:1px;flex:0 0 22px}
-  details{margin-top:8px;font-size:13px;color:var(--sub)}
-  details summary{cursor:pointer}
-  .bar{position:fixed;left:0;right:0;bottom:0;background:rgba(244,246,251,.94);backdrop-filter:blur(8px);
-    border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
-  .bar .in{max-width:720px;margin:0 auto}
-  .submit{width:100%;padding:17px;font-size:18px;font-weight:700;border:0;border-radius:14px;
-    background:var(--brand);color:var(--brand-ink);cursor:pointer}
-  .submit:disabled{opacity:.5}
-  .pending{text-align:center;font-size:12px;color:var(--sub);margin-top:6px;min-height:14px}
-  .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#111827;color:#fff;
-    padding:11px 16px;border-radius:12px;font-size:14px;max-width:90vw;opacity:0;pointer-events:none;
-    transition:opacity .2s;z-index:10}
+  .consent{display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.6;color:var(--sub)}
+  .consent input{width:20px;height:20px;margin-top:1px;flex:0 0 20px;accent-color:var(--brand)}
+  details{margin-top:10px;font-size:13px;color:var(--muted)}
+  details summary{cursor:pointer;font-weight:600;color:var(--sub)}
+  details p{line-height:1.6}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);
+    border-top:1px solid var(--line);padding:14px 20px calc(14px + env(safe-area-inset-bottom));
+    box-shadow:0 -12px 32px -16px rgba(19,19,22,.14)}
+  .bar .in{max-width:640px;margin:0 auto}
+  .submit{width:100%;padding:17px;font-size:16px;font-weight:700;border:0;border-radius:var(--radius-md);
+    background:var(--brand);color:var(--brand-ink);cursor:pointer;transition:transform .12s,background .12s;
+    box-shadow:0 12px 24px -12px rgba(49,130,246,.6)}
+  .submit:hover:not(:disabled){background:var(--brand-dark)}
+  .submit:active:not(:disabled){transform:scale(.98)}
+  .submit:disabled{opacity:.5;box-shadow:none}
+  .pending{text-align:center;font-size:12px;color:var(--muted);margin-top:8px;min-height:14px}
+  .toast{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--ink);color:#fff;
+    padding:12px 18px;border-radius:999px;font-size:14px;font-weight:600;max-width:90vw;opacity:0;pointer-events:none;
+    transition:opacity .2s;z-index:40;box-shadow:var(--shadow-md)}
   .toast.show{opacity:1}
   .done{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;
-    justify-content:center;text-align:center;padding:24px;z-index:20}
+    justify-content:center;text-align:center;padding:24px;z-index:50}
   .done.show{display:flex}
-  .done .ck{width:84px;height:84px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;margin-bottom:18px}
-  .done .ck svg{width:44px;height:44px}
-  .done h2{font-size:26px;margin:0 0 8px}
-  .done p{color:var(--sub);margin:0 0 20px}
-  .done button{padding:14px 26px;font-size:16px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .done .ck{width:80px;height:80px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;
+    margin-bottom:20px;box-shadow:0 16px 32px -12px rgba(18,183,106,.5);animation:pop .4s cubic-bezier(.2,1.3,.4,1)}
+  @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+  .done .ck svg{width:40px;height:40px}
+  .done h2{font-size:24px;margin:0 0 10px;font-weight:800;letter-spacing:-.02em}
+  .done p{color:var(--sub);margin:0 0 24px;font-size:15px}
+  .done button{padding:14px 28px;font-size:15px;font-weight:700;border-radius:999px;border:1.5px solid var(--line);
+    background:#fff;cursor:pointer;transition:transform .12s}
+  .done button:active{transform:scale(.97)}
 </style>
 </head>
 <body>
+<div class="topbar"></div>
 <div class="wrap">
   <header>
     <div class="ev" id="evName">AI FESTA</div>
@@ -109,7 +145,7 @@
   </header>
 
   <section class="card">
-    <h2>① 명함 촬영</h2>
+    <h2><span class="step">1</span>명함 촬영</h2>
     <div class="shot" id="shotBox">
       <button type="button" class="shotBtn" id="shot" aria-label="명함 촬영">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
@@ -127,7 +163,7 @@
   </section>
 
   <section class="card">
-    <h2>② 연락처</h2>
+    <h2><span class="step">2</span>연락처</h2>
 
     <label class="f" for="name">이름</label>
     <input type="text" id="name" autocomplete="name" placeholder="홍길동">
@@ -143,15 +179,15 @@
   </section>
 
   <section class="card">
-    <h2>③ 관심 제품</h2>
+    <h2><span class="step">3</span>관심 제품</h2>
     <div class="chips" id="chips"></div>
 
-    <label class="f" for="detail" style="margin-top:18px">상세 관심 내용</label>
+    <label class="f" for="detail">상세 관심 내용</label>
     <textarea id="detail" placeholder="도입 목적, 규모, 시기, 궁금한 점 등을 편하게 남겨주세요."></textarea>
   </section>
 
   <section class="card" id="bookingCard">
-    <h2>④ 미팅 예약 <span style="font-weight:400;color:var(--sub);font-size:13px">(선택)</span></h2>
+    <h2><span class="step">4</span>미팅 예약 <span class="optional">선택</span></h2>
 
     <div class="cal">
       <div class="cal-head">
@@ -164,7 +200,7 @@
     </div>
 
     <div id="slotWrap" hidden>
-      <label class="f">희망 시간 <span style="font-weight:400;color:var(--sub)">(<span id="slotDate"></span>)</span></label>
+      <label class="f">희망 시간 <span class="optional">(<span id="slotDate"></span>)</span></label>
       <div class="chips" id="slotChips"></div>
       <div class="hint" id="slotHint"></div>
     </div>
@@ -188,7 +224,7 @@
   <section class="card">
     <label class="consent">
       <input type="checkbox" id="consent">
-      <span><span class="req">[필수]</span> 개인정보 수집·이용에 동의합니다. GPUBASE 관련 안내 및 상담 목적으로만 사용됩니다.</span>
+      <span><span class="req">필수</span> 개인정보 수집·이용에 동의합니다. GPUBASE 관련 안내 및 상담 목적으로만 사용됩니다.</span>
     </label>
     <details>
       <summary>자세히 보기</summary>
