@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GPUBASE 방문 등록</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#fff; --ink:#111827; --sub:#6b7280; --line:#e5e7eb;
+    --brand:#3b4bff; --brand-ink:#fff; --rec:#e11d48; --ok:#059669;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:-apple-system,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
+  .wrap{max-width:720px;margin:0 auto;padding:16px 16px 120px}
+  header{padding:12px 4px 8px}
+  header .ev{font-size:13px;color:var(--brand);font-weight:700;letter-spacing:.04em}
+  header h1{margin:4px 0 4px;font-size:26px;line-height:1.25}
+  header p{margin:0;color:var(--sub);font-size:15px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
+  .card h2{margin:0 0 12px;font-size:16px}
+  .req{color:var(--rec);font-weight:700}
+
+  /* 명함 촬영 — 아이패드 후면 카메라 / 노트북 웹캠 공용(getUserMedia), 미지원 시 파일 선택으로 대체 */
+  .shot{width:100%;min-height:190px;border:2px dashed #b9c0ff;border-radius:14px;background:#f5f6ff;
+    overflow:hidden;position:relative}
+  .shot.has{border-style:solid;border-color:var(--line);background:#000}
+  .shotBtn{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:8px;width:100%;min-height:190px;color:var(--brand);font-size:18px;
+    font-weight:700;cursor:pointer}
+  .shotBtn svg{width:44px;height:44px}
+  .shotBtn small{font-weight:500;color:var(--sub);font-size:13px}
+  .shot img,.shot video{width:100%;height:auto;display:block;background:#000}
+  .camctl{position:absolute;left:0;right:0;bottom:12px;display:flex;gap:10px;justify-content:center}
+  .camBtn{padding:10px 20px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer}
+  .camBtn.primary{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
+  .retake{margin-top:8px;font-size:14px;color:var(--sub);background:none;border:0;text-decoration:underline;padding:6px 0;cursor:pointer}
+
+  /* 입력 */
+  label.f{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
+  label.f:first-of-type{margin-top:0}
+  .row{display:flex;gap:8px}
+  input[type=text],input[type=tel],input[type=email],textarea{
+    width:100%;font:inherit;font-size:17px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;
+    background:#fff;color:var(--ink);outline:none}
+  input:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(59,75,255,.15)}
+  textarea{min-height:130px;resize:vertical;line-height:1.5}
+  .hint{min-height:18px;margin-top:4px;font-size:13px;color:var(--sub)}
+  .hint.err{color:var(--rec)}
+
+  /* 관심 제품 / 예약 옵션 공용 칩 */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:11px 16px;font-size:15px;
+    cursor:pointer;user-select:none;color:var(--ink)}
+  .chip.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+  .chip.taken{opacity:.4;text-decoration:line-through;cursor:not-allowed}
+  .chip:disabled{opacity:.4;cursor:not-allowed}
+
+  /* 미팅 예약 — 캘린더 */
+  .cal{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fafbff}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .cal-title{font-weight:700;font-size:15px}
+  .calNav{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;
+    font-size:18px;line-height:1;cursor:pointer;color:var(--ink)}
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:12px;
+    color:var(--sub);margin-bottom:4px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-day{all:unset;box-sizing:border-box;aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    border-radius:10px;background:#fff;font-size:14px;cursor:pointer;color:var(--ink);text-align:center}
+  .cal-day.empty{visibility:hidden}
+  .cal-day.past{color:#c7cbd6;cursor:not-allowed}
+  .cal-day.today{box-shadow:inset 0 0 0 2px var(--brand)}
+  .cal-day.on{background:var(--brand);color:#fff;font-weight:700;box-shadow:none}
+  #bookingCard .f{margin-top:16px}
+
+  /* 동의 / 제출 */
+  .consent{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}
+  .consent input{width:22px;height:22px;margin-top:1px;flex:0 0 22px}
+  details{margin-top:8px;font-size:13px;color:var(--sub)}
+  details summary{cursor:pointer}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:rgba(244,246,251,.94);backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .bar .in{max-width:720px;margin:0 auto}
+  .submit{width:100%;padding:17px;font-size:18px;font-weight:700;border:0;border-radius:14px;
+    background:var(--brand);color:var(--brand-ink);cursor:pointer}
+  .submit:disabled{opacity:.5}
+  .pending{text-align:center;font-size:12px;color:var(--sub);margin-top:6px;min-height:14px}
+  .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#111827;color:#fff;
+    padding:11px 16px;border-radius:12px;font-size:14px;max-width:90vw;opacity:0;pointer-events:none;
+    transition:opacity .2s;z-index:10}
+  .toast.show{opacity:1}
+  .done{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;padding:24px;z-index:20}
+  .done.show{display:flex}
+  .done .ck{width:84px;height:84px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;margin-bottom:18px}
+  .done .ck svg{width:44px;height:44px}
+  .done h2{font-size:26px;margin:0 0 8px}
+  .done p{color:var(--sub);margin:0 0 20px}
+  .done button{padding:14px 26px;font-size:16px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="ev" id="evName">AI FESTA</div>
+    <h1>GPUBASE 방문 등록</h1>
+    <p>명함 촬영 후 관심 내용을 남겨주세요.</p>
+  </header>
+
+  <section class="card">
+    <h2>① 명함 촬영</h2>
+    <div class="shot" id="shotBox">
+      <button type="button" class="shotBtn" id="shot" aria-label="명함 촬영">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        <span>여기를 눌러 명함 촬영</span>
+        <small>카메라가 바로 열립니다</small>
+      </button>
+      <video id="video" autoplay playsinline muted hidden></video>
+      <div class="camctl" id="camctl" hidden>
+        <button type="button" id="camCancel" class="camBtn">취소</button>
+        <button type="button" id="capBtn" class="camBtn primary">촬영</button>
+      </div>
+    </div>
+    <input type="file" id="cardInput" accept="image/*" capture="environment" hidden>
+    <button type="button" class="retake" id="retake" hidden>다시 촬영</button>
+  </section>
+
+  <section class="card">
+    <h2>② 연락처</h2>
+
+    <label class="f" for="name">이름</label>
+    <input type="text" id="name" autocomplete="name" placeholder="홍길동">
+
+    <label class="f" for="company">회사 / 소속</label>
+    <input type="text" id="company" autocomplete="organization" placeholder="회사명 · 부서">
+
+    <label class="f" for="phone">연락처</label>
+    <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000">
+
+    <label class="f" for="email">이메일</label>
+    <input type="email" id="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="name@company.com">
+  </section>
+
+  <section class="card">
+    <h2>③ 관심 제품</h2>
+    <div class="chips" id="chips"></div>
+
+    <label class="f" for="detail" style="margin-top:18px">상세 관심 내용</label>
+    <textarea id="detail" placeholder="도입 목적, 규모, 시기, 궁금한 점 등을 편하게 남겨주세요."></textarea>
+  </section>
+
+  <section class="card" id="bookingCard">
+    <h2>④ 미팅 예약 <span style="font-weight:400;color:var(--sub);font-size:13px">(선택)</span></h2>
+
+    <div class="cal">
+      <div class="cal-head">
+        <button type="button" class="calNav" id="calPrev" aria-label="이전 달">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button type="button" class="calNav" id="calNext" aria-label="다음 달">›</button>
+      </div>
+      <div class="cal-dow"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <div id="slotWrap" hidden>
+      <label class="f">희망 시간 <span style="font-weight:400;color:var(--sub)">(<span id="slotDate"></span>)</span></label>
+      <div class="chips" id="slotChips"></div>
+      <div class="hint" id="slotHint"></div>
+    </div>
+
+    <div id="methodWrap" hidden>
+      <label class="f">미팅 방식</label>
+      <div class="chips" id="methodChips"></div>
+    </div>
+
+    <div id="locationWrap" hidden>
+      <label class="f">방문 장소</label>
+      <div class="chips" id="locationChips"></div>
+    </div>
+
+    <div id="purposeWrap" hidden>
+      <label class="f">미팅 목적</label>
+      <div class="chips" id="purposeChips"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <label class="consent">
+      <input type="checkbox" id="consent">
+      <span><span class="req">[필수]</span> 개인정보 수집·이용에 동의합니다. GPUBASE 관련 안내 및 상담 목적으로만 사용됩니다.</span>
+    </label>
+    <details>
+      <summary>자세히 보기</summary>
+      <p>수집 항목: 이름, 소속, 연락처, 이메일, 명함 이미지, 관심 내용 / 이용 목적: 제품 안내 및 상담 연락 / 보유 기간: 상담 종료 후 <span id="retain"></span> 또는 삭제 요청 시까지. 동의를 거부할 수 있으며, 거부 시 상담 안내가 제한됩니다.</p>
+    </details>
+  </section>
+</div>
+
+<div class="bar"><div class="in">
+  <button class="submit" id="submit">등록하기</button>
+  <div class="pending" id="pending"></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<div class="done" id="done">
+  <div class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+  <h2>등록되었습니다. 감사합니다!</h2>
+  <p id="doneMsg">담당자가 빠르게 연락드리겠습니다.</p>
+  <button id="doneBtn">다음 방문객 등록</button>
+</div>
+
+<script>
+/* ============ 설정 (여기만 수정) ============ */
+const CONFIG = {
+  EVENT: 'AI FESTA',
+  ENDPOINT: 'https://script.google.com/macros/s/AKfycbxLuCov64NCsVivjP0M2yYTbnJAutOnFC-jK6Q_71jGVNhBLzV-1_Q2e5rCEQVbb4ZEiw/exec',
+  SECRET: '',                   // Code.gs 의 SHARED_SECRET 과 동일하게 (선택)
+  RETAIN: '1년',
+  RESET_MS: 6000,               // 완료 화면 후 자동 초기화 시간
+  // 관심 제품 목록 — 실제 제품/서비스명으로 바꿔주세요.
+  PRODUCTS: [
+    'GPUBASE 도입문의',
+    'GPUBASE 견적',
+    'PoC/데모요청',
+    'AgentBase',
+    '파트너/리셀',
+    '기타',
+  ],
+  // 미팅 예약 옵션
+  BOOKING: {
+    START_HOUR: 9,   // 첫 슬롯 시작 시각
+    END_HOUR: 18,    // 마지막 슬롯 종료 시각 (1시간 단위)
+    METHODS: ['온라인', '오프라인'],
+    LOCATIONS: ['아크릴 방문', '당사 방문 희망'],
+    PURPOSES: ['엔지니어 미팅 희망', '사업전략 미팅 희망', '파트너십 논의 희망', '기타'],
+  },
+};
+/* ============================================ */
+</script>
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  document.title = 'GPUBASE 방문 등록 · ' + CONFIG.EVENT;
+  $('#evName').textContent = CONFIG.EVENT;
+  $('#retain').textContent = CONFIG.RETAIN;
+  const QKEY = 'gpubase_leads_queue';
+  let cardData = '';                    // 압축된 명함 dataURL
+  const selected = new Set();
+
+  /* ---------- toast ---------- */
+  let tt;
+  function toast(msg, ms = 2600){
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), ms);
+  }
+
+  /* ---------- 명함 촬영 — 아이패드/노트북 등 기기 구분 없이 동일하게 동작 ----------
+     1순위: getUserMedia 로 실시간 미리보기(아이패드=후면 카메라, 노트북=웹캠) 후 촬영
+     2순위(미지원·권한거부): 파일 선택 대화상자(모바일은 대부분 카메라 앱으로 연결됨)      */
+  const shotBox = $('#shotBox'), shot = $('#shot'), video = $('#video'), camctl = $('#camctl'),
+        capBtn = $('#capBtn'), camCancel = $('#camCancel'), input = $('#cardInput'), retake = $('#retake');
+  let stream = null;
+
+  async function openCamera(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ input.click(); return; }
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    }catch(e){ input.click(); return; }
+    video.srcObject = stream;
+    shot.hidden = true; video.hidden = false; camctl.hidden = false; shotBox.classList.add('has');
+  }
+  function closeCamera(){
+    if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+    video.hidden = true; camctl.hidden = true; video.srcObject = null;
+  }
+  function showPreview(dataUrl){
+    shotBox.querySelectorAll('img').forEach(im => im.remove());
+    const img = new Image(); img.alt = '명함 미리보기'; img.src = dataUrl;
+    shotBox.appendChild(img);
+    shot.hidden = true; shotBox.classList.add('has'); retake.hidden = false;
+  }
+  shot.addEventListener('click', openCamera);
+  camCancel.addEventListener('click', () => {
+    closeCamera(); shot.hidden = false;
+    if(!cardData) shotBox.classList.remove('has');
+  });
+  capBtn.addEventListener('click', () => {
+    cardData = shrink(video, 1600, 0.8);
+    closeCamera();
+    showPreview(cardData);
+  });
+  retake.addEventListener('click', openCamera);
+  input.addEventListener('change', async () => {
+    const f = input.files && input.files[0];
+    if(!f) return;
+    try{ cardData = await compress(f, 1600, 0.8); showPreview(cardData); }
+    catch(e){ toast('이미지를 불러오지 못했습니다. 다시 촬영해 주세요.'); }
+  });
+  function shrink(src, max, q){
+    const w = src.videoWidth || src.width, h = src.videoHeight || src.height;
+    const r = Math.min(1, max / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width = Math.round(w * r); c.height = Math.round(h * r);
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', q);
+  }
+  function compress(file, max, q){
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => { res(shrink(img, max, q)); URL.revokeObjectURL(url); };
+      img.onerror = rej; img.src = url;
+    });
+  }
+
+  /* ---------- 관심 제품 칩 ---------- */
+  const chips = $('#chips');
+  CONFIG.PRODUCTS.forEach(label => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = label;
+    b.dataset.label = label;
+    b.addEventListener('click', () => {
+      const on = !selected.has(label);
+      on ? selected.add(label) : selected.delete(label);
+      b.classList.toggle('on', on);
+    });
+    chips.appendChild(b);
+  });
+
+  /* ---------- 미팅 예약 (캘린더 → 시간 → 방식 → 장소 → 목적) ---------- */
+  const pad2 = n => String(n).padStart(2, '0');
+  const fmtDate = (y, m, d) => y + '-' + pad2(m + 1) + '-' + pad2(d);
+  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+
+  let calY = today0.getFullYear(), calM = today0.getMonth();
+  let selDate = null, selTime = null, selMethod = null, selLocation = null, selPurpose = null;
+
+  const calTitle = $('#calTitle'), calGrid = $('#calGrid'), calPrev = $('#calPrev'), calNext = $('#calNext');
+  const slotWrap = $('#slotWrap'), slotChips = $('#slotChips'), slotHint = $('#slotHint'), slotDateEl = $('#slotDate');
+  const methodWrap = $('#methodWrap'), methodChips = $('#methodChips');
+  const locationWrap = $('#locationWrap'), locationChips = $('#locationChips');
+  const purposeWrap = $('#purposeWrap'), purposeChips = $('#purposeChips');
+
+  function renderCalendar(){
+    calTitle.textContent = calY + '년 ' + (calM + 1) + '월';
+    calGrid.innerHTML = '';
+    const firstDow = new Date(calY, calM, 1).getDay();
+    const daysInMonth = new Date(calY, calM + 1, 0).getDate();
+    for(let i = 0; i < firstDow; i++){
+      const e = document.createElement('span'); e.className = 'cal-day empty'; calGrid.appendChild(e);
+    }
+    for(let d = 1; d <= daysInMonth; d++){
+      const ds = fmtDate(calY, calM, d);
+      const cellDate = new Date(calY, calM, d);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'cal-day'; b.textContent = d; b.dataset.date = ds;
+      if(cellDate.getTime() === today0.getTime()) b.classList.add('today');
+      if(cellDate < today0){
+        b.classList.add('past'); b.disabled = true;
+      }else{
+        b.addEventListener('click', () => selectDate(ds, b));
+      }
+      if(ds === selDate) b.classList.add('on');
+      calGrid.appendChild(b);
+    }
+  }
+  calPrev.addEventListener('click', () => { calM--; if(calM < 0){ calM = 11; calY--; } renderCalendar(); });
+  calNext.addEventListener('click', () => { calM++; if(calM > 11){ calM = 0; calY++; } renderCalendar(); });
+
+  function resetAfterDate(){
+    selTime = null; selMethod = null; selLocation = null; selPurpose = null;
+    slotWrap.hidden = true; methodWrap.hidden = true; locationWrap.hidden = true; purposeWrap.hidden = true;
+  }
+  function selectDate(ds, btn){
+    selDate = ds;
+    calGrid.querySelectorAll('.cal-day.on').forEach(c => c.classList.remove('on'));
+    btn.classList.add('on');
+    resetAfterDate();
+    slotDateEl.textContent = ds;
+    renderSlots([]); // 우선 전부 활성화한 상태로 즉시 표시
+    slotWrap.hidden = false;
+    loadTakenSlots(ds);
+  }
+  function renderSlots(taken){
+    slotChips.innerHTML = '';
+    const { START_HOUR, END_HOUR } = CONFIG.BOOKING;
+    for(let h = START_HOUR; h < END_HOUR; h++){
+      const time = pad2(h) + ':00';
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = time + '–' + pad2(h + 1) + ':00';
+      if(taken.includes(time)){
+        b.classList.add('taken'); b.disabled = true;
+      }else{
+        b.addEventListener('click', () => {
+          selTime = time;
+          slotChips.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+          b.classList.add('on');
+          methodWrap.hidden = false;
+        });
+      }
+      slotChips.appendChild(b);
+    }
+  }
+  async function loadTakenSlots(ds){
+    if(!CONFIG.ENDPOINT){ slotHint.textContent = ''; return; }
+    slotHint.textContent = '예약 현황 확인 중…';
+    try{
+      const r = await fetch(CONFIG.ENDPOINT + '?action=slots&date=' + encodeURIComponent(ds));
+      const j = await r.json();
+      if(ds !== selDate) return; // 그 사이 다른 날짜를 선택했으면 무시
+      renderSlots(j.ok ? (j.times || []) : []);
+      slotHint.textContent = '';
+    }catch(e){ slotHint.textContent = '예약 현황을 불러오지 못했습니다. 겹치는 시간은 제출 시 다시 확인됩니다.'; }
+  }
+
+  function buildRadioChips(container, labels, onPick){
+    container.innerHTML = '';
+    let value = null;
+    labels.forEach(label => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = label;
+      b.addEventListener('click', () => {
+        value = label;
+        container.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+        b.classList.add('on');
+        onPick(label);
+      });
+      container.appendChild(b);
+    });
+    return { clear(){ value = null; container.querySelectorAll('.chip').forEach(c => c.classList.remove('on')); } };
+  }
+  buildRadioChips(methodChips, CONFIG.BOOKING.METHODS, label => {
+    selMethod = label;
+    if(label === '오프라인'){ locationWrap.hidden = false; }
+    else{ locationWrap.hidden = true; selLocation = null; locationChips.querySelectorAll('.chip').forEach(c => c.classList.remove('on')); }
+    purposeWrap.hidden = false;
+  });
+  buildRadioChips(locationChips, CONFIG.BOOKING.LOCATIONS, label => { selLocation = label; });
+  buildRadioChips(purposeChips, CONFIG.BOOKING.PURPOSES, label => { selPurpose = label; });
+
+  renderCalendar();
+
+  /* ---------- 전송 / 오프라인 큐 ---------- */
+  const getQ = () => { try{ return JSON.parse(localStorage.getItem(QKEY) || '[]'); }catch(_){ return []; } };
+  const setQ = q => { try{ localStorage.setItem(QKEY, JSON.stringify(q)); }catch(_){ toast('저장 공간이 부족합니다. 관리자에게 알려주세요.', 4000); } showPending(); };
+  function showPending(){ const n = getQ().length; $('#pending').textContent = n ? '전송 대기 ' + n + '건 (네트워크 복구 시 자동 재전송)' : ''; }
+
+  async function send(payload){
+    const r = await fetch(CONFIG.ENDPOINT, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+    });
+    const j = await r.json();
+    if(!j.ok){ const err = new Error(j.error || 'server'); err.code = j.error || 'server'; throw err; }
+  }
+  let flushing = false;
+  async function flush(){
+    if(flushing || !CONFIG.ENDPOINT) return;
+    flushing = true;
+    try{
+      let q = getQ();
+      while(q.length){
+        try{ await send(q[0]); q.shift(); setQ(q); }
+        catch(err){
+          // 서버가 명시적으로 거절한 항목(예: 예약 시간 충돌)은 재시도해도 소용없으니 큐에서 제거하고 다음 항목으로.
+          if(err && err.code){ q.shift(); setQ(q); continue; }
+          break; // 네트워크 문제로 추정 — 큐에 남겨두고 나중에 재시도
+        }
+      }
+    } finally { flushing = false; }
+  }
+  window.addEventListener('online', flush);
+  setInterval(flush, 30000);
+
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(16).slice(2));
+
+  $('#submit').addEventListener('click', async () => {
+    const v = id => $(id).value.trim();
+    if(!$('#consent').checked){ toast('개인정보 수집·이용에 동의해 주세요.'); return; }
+    if(!cardData && !v('#phone') && !v('#email')){ toast('명함 촬영 또는 연락처/이메일 중 하나는 남겨주세요.', 3200); return; }
+    const email = v('#email');
+    if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast('이메일 형식을 확인해 주세요.'); $('#email').focus(); return; }
+    if(selDate && !selTime){ toast('희망 시간을 선택해 주세요.'); return; }
+    if(selTime && !selMethod){ toast('미팅 방식(온라인/오프라인)을 선택해 주세요.'); return; }
+    if(selMethod === '오프라인' && !selLocation){ toast('방문 장소를 선택해 주세요.'); return; }
+
+    const payload = {
+      id: uid(), secret: CONFIG.SECRET, ts: new Date().toISOString(), event: CONFIG.EVENT,
+      name: v('#name'), company: v('#company'), phone: v('#phone'), email,
+      products: [...selected], detail: v('#detail'), consent: '동의', cardImage: cardData
+    };
+    if(selDate){
+      payload.date = selDate; payload.time = selTime; payload.method = selMethod;
+      if(selMethod === '오프라인') payload.location = selLocation;
+      if(selPurpose) payload.purpose = selPurpose;
+    }
+    const btn = $('#submit'); btn.disabled = true; btn.textContent = '전송 중…';
+    let queued = false;
+    try{
+      if(!CONFIG.ENDPOINT) throw new Error('no endpoint');
+      await send(payload);
+    }catch(err){
+      if(err && err.code === 'slot_taken'){
+        toast('이미 예약된 시간입니다. 다른 시간을 선택해 주세요.', 3600);
+        btn.disabled = false; btn.textContent = '등록하기';
+        loadTakenSlots(selDate); // 최신 예약 현황 다시 불러오기
+        return; // 완료 화면으로 넘어가지 않고, 방문객이 바로 다른 시간을 고르게 함
+      }
+      const q = getQ(); q.push(payload); setQ(q); queued = true;
+    }
+    btn.disabled = false; btn.textContent = '등록하기';
+    showDone(queued);
+  });
+
+  /* ---------- 완료 / 초기화 ---------- */
+  let resetT;
+  function showDone(queued){
+    $('#doneMsg').textContent = queued ? '네트워크가 불안정해 임시 저장했습니다. 연결되면 자동 전송됩니다.' : '담당자가 빠르게 연락드리겠습니다.';
+    $('#done').classList.add('show');
+    resetT = setTimeout(resetForm, CONFIG.RESET_MS);
+  }
+  function resetForm(){
+    clearTimeout(resetT);
+    ['#name','#company','#phone','#email','#detail'].forEach(s => $(s).value = '');
+    input.value = ''; cardData = ''; selected.clear();
+    chips.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    closeCamera();
+    shotBox.querySelectorAll('img').forEach(im => im.remove());
+    shotBox.classList.remove('has');
+    shot.hidden = false; retake.hidden = true; $('#consent').checked = false;
+    selDate = null; resetAfterDate();
+    calGrid.querySelectorAll('.cal-day.on').forEach(c => c.classList.remove('on'));
+    methodChips.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    locationChips.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    purposeChips.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    $('#done').classList.remove('show');
+    window.scrollTo({ top: 0 });
+    flush();
+  }
+  $('#doneBtn').addEventListener('click', resetForm);
+
+  showPending(); flush();
+})();
+</script>
+</body>
+</html>
